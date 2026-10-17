@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase Connection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Supabase Connection Test</h1>
+    <button onclick="testConnection()">Test Connection</button>
+    <div id="results"></div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+        const supabaseUrl = 'https://mhiourrkuoykqashvidl.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1oaW91cnJrdW95a3Fhc2h2aWRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU1MzM0ODMsImV4cCI6MjA4MTEwOTQ4M30.Fj1bSChyWxhsx-StfmOQnH9rR8MCpSmRZ0CjIpcMoJ0';
+
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        window.testConnection = async function() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<div class="status info">Testing connection...</div>';
+
+            try {
+                // Test 1: Basic fetch to Supabase URL
+                results.innerHTML += '<div class="status info">Test 1: Checking if Supabase URL is reachable...</div>';
+                const fetchResponse = await fetch(supabaseUrl);
+                results.innerHTML += `<div class="status success">✓ Supabase URL is reachable (Status: ${fetchResponse.status})</div>`;
+
+                // Test 2: Get session (should work even without login)
+                results.innerHTML += '<div class="status info">Test 2: Checking auth session...</div>';
+                const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+                if (sessionError) {
+                    results.innerHTML += `<div class="status error">✗ Session check failed: ${sessionError.message}</div>`;
+                } else {
+                    results.innerHTML += '<div class="status success">✓ Session check successful (no active session)</div>';
+                }
+
+                // Test 3: Try to query public data
+                results.innerHTML += '<div class="status info">Test 3: Querying database...</div>';
+                const { data: tableData, error: tableError } = await supabase
+                    .from('users')
+                    .select('count')
+                    .limit(1);
+                
+                if (tableError) {
+                    results.innerHTML += `<div class="status error">✗ Database query failed: ${tableError.message}</div>`;
+                } else {
+                    results.innerHTML += '<div class="status success">✓ Database query successful</div>';
+                }
+
+                // Test 4: Try actual login
+                results.innerHTML += '<div class="status info">Test 4: Testing login with your credentials...</div>';
+                const email = 'robiulislamtamim12345@gmail.com';
+                const password = prompt('Enter your password:');
+                
+                if (password) {
+                    const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+                        email,
+                        password
+                    });
+
+                    if (loginError) {
+                        results.innerHTML += `<div class="status error">✗ Login failed: ${loginError.message}</div>`;
+                    } else {
+                        results.innerHTML += '<div class="status success">✓ Login successful!</div>';
+                        results.innerHTML += `<div class="status info">User ID: ${loginData.user?.id}</div>`;
+                    }
+                }
+
+            } catch (error) {
+                results.innerHTML += `<div class="status error">✗ Error: ${error.message}</div>`;
+                console.error('Connection test error:', error);
+            }
+        };
+    </script>
+</body>
+</html>
